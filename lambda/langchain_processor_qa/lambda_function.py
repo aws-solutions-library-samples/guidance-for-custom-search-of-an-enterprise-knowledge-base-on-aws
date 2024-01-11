@@ -137,15 +137,6 @@ def lambda_handler(event, context):
 
         if "sagemakerEndpoint" in evt_body.keys():
             sagemakerEndpoint = evt_body['sagemakerEndpoint']
-        
-        isCheckedTitanEmbedding = False
-        if "isCheckedTitanEmbedding" in evt_body.keys():
-            isCheckedTitanEmbedding = ast.literal_eval(str(evt_body['isCheckedTitanEmbedding']).title())
-        print('isCheckedTitanEmbedding:', isCheckedTitanEmbedding)
-        
-        if isCheckedTitanEmbedding:
-            embeddingEndpoint = "bedrock-titan-embed"
-        print('embeddingEndpoint:', embeddingEndpoint)
 
         modelType = 'normal'
         if "modelType" in evt_body.keys():
@@ -200,6 +191,13 @@ def lambda_handler(event, context):
                 apiKey = llmData['apiKey']
             if "secretKey" in llmData.keys():
                 secretKey = llmData['secretKey']
+            isCheckedTitanEmbedding = False
+            if "isCheckedTitanEmbedding" in llmData.keys():
+                isCheckedTitanEmbedding = ast.literal_eval(str(llmData['isCheckedTitanEmbedding']).title())
+            print('isCheckedTitanEmbedding:', isCheckedTitanEmbedding)
+            if isCheckedTitanEmbedding:
+                embeddingEndpoint = "bedrock-titan-embed"
+            print('embeddingEndpoint:', embeddingEndpoint)
 
         searchEngine = "opensearch"
         if not search_engine_opensearch and search_engine_kendra:
@@ -544,6 +542,7 @@ def lambda_handler(event, context):
             {
                 'timestamp': time.time() * 1000,
                 'text': str(e),
+                'errorMessage': str(e),
                 'sourceData': [],
                 'message':'error',
                 'contentCheckLabel': contentCheckLabel,
