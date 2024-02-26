@@ -24,7 +24,10 @@ export default function NavSide() {
   return (
     <SideNavigation
       // header={{ text: 'Sessions', href: '' }}
-      header={{ text: 'Smart Search', href: '' }}
+      header={{
+        text: `Smart Search ${process.env.REACT_APP_UI_VERSION}`,
+        href: '',
+      }}
       activeHref={activeHref}
       onFollow={(event) => {
         if (!event.detail.external) {
