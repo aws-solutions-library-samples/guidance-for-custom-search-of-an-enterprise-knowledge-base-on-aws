@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   Autosuggest,
   Box,
@@ -20,6 +19,7 @@ import useInput from 'src/hooks/useInput';
 import useLsLanguageModelList from 'src/hooks/useLsLanguageModelList';
 import useToggle from 'src/hooks/useToggle';
 import { genRandomNum } from 'src/utils/genUID';
+import useEndpointList from 'src/hooks/useEndpointList';
 
 const SIZE = 'l';
 
@@ -62,14 +62,15 @@ const THIRD_PARTY_API_MODEL_NAMES = [
     modelType: ['bedrock', 'bedrock_api'],
   },
 ];
-const EMBEDDING_ENDPOINTS = [
-  { label: 'Titan Embedding', value: 'bedrock-titan-embed' },
-  { label: 'Cohere Embedding', value: 'cohere.embed-multilingual-v3' },
-];
 
 const LanguageModelStrategy = () => {
   const [strategyName, bindStrategyName, resetStrategyName] = useInput('');
   const [type, setType] = useState(TYPE.sagemaker);
+  const [
+    OptionsSagemakerEndpoint,
+    OptionsEmbeddingEndpoint,
+    loadingEndpointList,
+  ] = useEndpointList();
   const [sagemakerEndpoint, bindSagemakerEndpoint, resetSagemakerEndpoint] =
     useInput('');
   const [
@@ -361,6 +362,7 @@ const LanguageModelStrategy = () => {
               </FormField>
 
               {type === TYPE.sagemaker ? (
+                // **** SageMaker *************************************************************
                 <>
                   <FormField>
                     <Toggle {...bindLlama2Switch}>
@@ -369,9 +371,16 @@ const LanguageModelStrategy = () => {
                   </FormField>
                   <Grid gridDefinition={[{ colspan: 8 }, { colspan: 4 }]}>
                     <FormField stretch label="SageMaker Endpoint">
-                      <Input
+                      <Autosuggest
+                        enteredTextLabel={(v) => `Use: "${v}"`}
                         {...bindSagemakerEndpoint}
-                        placeholder="Please provide SageMaker Endpoint"
+                        loadingText="loading endpoint list"
+                        statusType={
+                          loadingEndpointList ? 'loading' : 'finished'
+                        }
+                        options={OptionsSagemakerEndpoint}
+                        placeholder="Search or enter value"
+                        empty="No matches found"
                       />
                     </FormField>
                     <FormField label="Switch for Streaming">
@@ -383,13 +392,16 @@ const LanguageModelStrategy = () => {
                     <Autosuggest
                       enteredTextLabel={(v) => `Use: "${v}"`}
                       {...bindEmbeddingEndpoint}
-                      options={EMBEDDING_ENDPOINTS}
-                      placeholder="Please enter your embedding endpoint"
+                      loadingText="loading endpoint list"
+                      statusType={loadingEndpointList ? 'loading' : 'finished'}
+                      options={OptionsEmbeddingEndpoint}
+                      placeholder="Search or enter value"
                       empty="No matches found"
                     />
                   </FormField>
                 </>
               ) : (
+                // **** Third Party ***********************************************************
                 <>
                   <FormField label="Model Type" stretch>
                     <Tiles
@@ -416,8 +428,10 @@ const LanguageModelStrategy = () => {
                     <Autosuggest
                       enteredTextLabel={(v) => `Use: "${v}"`}
                       {...bindThirdPartyEmbeddingEndpoint}
-                      options={EMBEDDING_ENDPOINTS}
-                      placeholder="Please enter your embedding endpoint"
+                      loadingText="loading endpoint list"
+                      statusType={loadingEndpointList ? 'loading' : 'finished'}
+                      options={OptionsEmbeddingEndpoint}
+                      placeholder="Search or enter value"
                       empty="No matches found"
                     />
                   </FormField>

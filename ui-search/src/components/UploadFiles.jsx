@@ -18,6 +18,7 @@ import useIndexNameList from 'src/hooks/useIndexNameList';
 import useInput from 'src/hooks/useInput';
 import useLsAppConfigs from 'src/hooks/useLsAppConfigs';
 import { OPTIONS_SEARCH_ENGINE } from './ModalCreateSession';
+import useEndpointList from 'src/hooks/useEndpointList';
 
 const SIZE = 'l';
 const OPTIONS_FILE_LANG = [
@@ -32,14 +33,18 @@ const indexNameIsInvalid = (indexName) => /^\.|.*[A-Z|\s].*/.test(indexName);
 
 const UploadFiles = () => {
   const { urlApiGateway, s3FileUpload } = useLsAppConfigs();
-  const { indexNameList, loading: loadingIndexNameList } = useIndexNameList();
+  const [indexNameList, loadingIndexNameList] = useIndexNameList();
+  const [
+    OptionsSagemakerEndpoint,
+    OptionsEmbeddingEndpoint,
+    loadingEndpointList,
+  ] = useEndpointList();
 
   const [searchEngine, bindSearchEngine, resetSearchEngine] = useInput(
     OPTIONS_SEARCH_ENGINE[0].value
   );
   const [indexName, setIndexName] = useState('');
-  const [embeddingEndpointName, bindEmbeddingEndpointName, resetEmbEpN] =
-    useInput('');
+  const [embeddingEndpoint, setEmbeddingEndpoint] = useState('');
   const [chunkSize, setChunkSize] = useState(200);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [fileLang, bindFileLang, resetFileLang] = useInput(
@@ -49,7 +54,7 @@ const UploadFiles = () => {
   const resetForm = useCallback(() => {
     resetSearchEngine();
     setIndexName('');
-    resetEmbEpN();
+    setEmbeddingEndpoint('');
     setChunkSize(200);
     setSelectedFiles([]);
     resetFileLang();
@@ -61,7 +66,7 @@ const UploadFiles = () => {
     !indexName ||
     indexNameIsInvalid(indexName) ||
     !selectedFiles.length ||
-    !embeddingEndpointName ||
+    !embeddingEndpoint ||
     !chunkSize;
 
   // const [processing file]
@@ -115,7 +120,7 @@ const UploadFiles = () => {
                       object_key: `source_data/${indexName}/${file.name}`,
                       language: fileLang,
                       search_engine: searchEngine,
-                      embedding_endpoint_name: embeddingEndpointName,
+                      embedding_endpoint_name: embeddingEndpoint,
                       chunk_size: chunkSize,
                       index: indexName,
                     };
@@ -183,16 +188,22 @@ const UploadFiles = () => {
                 loadingText="loading index names"
                 statusType={loadingIndexNameList ? 'loading' : 'finished'}
                 options={indexNameList.map((name) => ({ value: name }))}
-                placeholder="Enter value"
+                placeholder="Search or enter value"
                 empty="No matches found"
               />
             </FormField>
 
             <Grid gridDefinition={[{ colspan: 8 }, { colspan: 4 }]}>
               <FormField stretch label="Embedding Endpoint Name" description="">
-                <Input
-                  {...bindEmbeddingEndpointName}
-                  placeholder="Please provide embedding endpoint name"
+                <Autosuggest
+                  enteredTextLabel={(v) => `Use: "${v}"`}
+                  onChange={({ detail }) => setEmbeddingEndpoint(detail.value)}
+                  value={embeddingEndpoint}
+                  loadingText="loading endpoint list"
+                  statusType={loadingEndpointList ? 'loading' : 'finished'}
+                  options={OptionsEmbeddingEndpoint}
+                  placeholder="Search or enter value"
+                  empty="No matches found"
                 />
               </FormField>
               <FormField label="Chunk Size" description="">
