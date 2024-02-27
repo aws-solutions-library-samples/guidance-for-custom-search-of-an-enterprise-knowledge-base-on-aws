@@ -42,6 +42,11 @@ const THIRD_PARTY_API_MODEL_NAMES = [
     modelType: ['bedrock', 'bedrock_api'],
   },
   {
+    label: 'anthropic.claude-v2:1',
+    value: 'anthropic.claude-v2:1',
+    modelType: ['bedrock', 'bedrock_api'],
+  },
+  {
     label: 'anthropic.claude-v1',
     value: 'anthropic.claude-v1',
     modelType: ['bedrock', 'bedrock_api'],
