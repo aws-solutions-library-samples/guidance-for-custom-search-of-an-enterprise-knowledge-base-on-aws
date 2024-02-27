@@ -59,6 +59,7 @@ const THIRD_PARTY_API_MODEL_NAMES = [
 ];
 const EMBEDDING_ENDPOINTS = [
   { label: 'Titan Embedding', value: 'bedrock-titan-embed' },
+  { label: 'Cohere Embedding', value: 'cohere.embed-multilingual-v3' },
 ];
 
 const LanguageModelStrategy = () => {
