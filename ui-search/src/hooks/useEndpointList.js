@@ -47,7 +47,7 @@ const useEndpointList = (fetchNow = true) => {
 
   return [
     optionsEndpoint,
-    [...optionsEndpoint, ...EMBEDDING_ENDPOINTS_FIXED],
+    [...EMBEDDING_ENDPOINTS_FIXED, ...optionsEndpoint],
     loading,
   ];
 };

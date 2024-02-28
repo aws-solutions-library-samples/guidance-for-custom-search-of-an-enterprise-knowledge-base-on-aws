@@ -110,7 +110,7 @@ const SessionBrief = ({ configs, expanded }) => {
           <SpaceBetween size={SIZE}>
             <ValueWithLabel label="Engine">{searchEngine}</ValueWithLabel>
             <ValueWithLabel label="Language Model Strategy">
-              {llmData?.modelName}
+              {llmData?.strategyName}
             </ValueWithLabel>
             <ValueWithLabel label="Language">{language}</ValueWithLabel>
             {isKendra ? (
