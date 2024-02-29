@@ -161,10 +161,10 @@ const SessionBrief = ({ configs, expanded }) => {
           )}
 
           <SpaceBetween size="xs">
-            <BoolState bool={isCheckedGenerateReport} text="Generate Report" />
-            <BoolState bool={isCheckedContext} text="Context" />
+            {/* <BoolState bool={isCheckedGenerateReport} text="Generate Report" /> */}
+            {/* <BoolState bool={isCheckedContext} text="Context" /> */}
             <BoolState bool={isCheckedKnowledgeBase} text="Knowledge Base" />
-            <BoolState bool={isCheckedMapReduce} text="Map Reduce" />
+            {/* <BoolState bool={isCheckedMapReduce} text="Map Reduce" /> */}
             {!isKendra && (
               <>
                 <BoolState
