@@ -17,7 +17,7 @@ const SessionChats = ({ conversations }) => {
         ) : (
           conversations.map(({ type, content }, i) =>
             type === 'customer' ? (
-              // customer chat
+              // customer search query record
               <StyledQ key={i}>
                 <div className="icon">
                   <ChatIcon />
@@ -26,7 +26,7 @@ const SessionChats = ({ conversations }) => {
                 <div className="extra">{readTimestamp(content.timestamp)}</div>
               </StyledQ>
             ) : (
-              // robot chat
+              // robot response record
               <SessionChatsAI content={content} key={i} />
             )
           )

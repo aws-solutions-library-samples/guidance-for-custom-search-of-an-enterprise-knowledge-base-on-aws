@@ -204,8 +204,8 @@ const SessionInput = ({ data }) => {
   useEffect(() => {
     if (loading) {
       const interval = setInterval(
-        () => setSecondsTaken((prev) => prev + 10),
-        10
+        () => setSecondsTaken((prev) => prev + 100),
+        100
       );
       return () => clearInterval(interval);
     }
@@ -243,7 +243,9 @@ const SessionInput = ({ data }) => {
           </Button>
         </div>
         {loading ? (
-          <div style={{ minWidth: '50px' }}>{secondsTaken / 1000} s</div>
+          <div style={{ minWidth: '50px' }}>
+            {Number(secondsTaken / 1000).toFixed(1)} s
+          </div>
         ) : (
           <div>
             <StatusIndicator type={isConnected ? 'success' : 'stopped'}>
