@@ -681,6 +681,40 @@ class LambdaVPCStack(Stack):
                 )
             ]
         )
+    def create_apigw_resource_method_for_endpoint_list(self, api, endpoint_list_function):
+
+        endpoint_list_resource = api.root.add_resource(
+            'endpoint_list',
+            default_cors_preflight_options=apigw.CorsOptions(
+                allow_methods=['GET', 'OPTIONS'],
+                allow_origins=apigw.Cors.ALL_ORIGINS)
+        )
+
+        endpoint_list_integration = apigw.LambdaIntegration(
+            endpoint_list_function,
+            proxy=True,
+            integration_responses=[
+                apigw.IntegrationResponse(
+                    status_code="200",
+                    response_parameters={
+                        'method.response.header.Access-Control-Allow-Origin': "'*'"
+                    }
+                )
+            ]
+        )
+
+        endpoint_list_resource.add_method(
+            'GET',
+            endpoint_list_integration,
+            method_responses=[
+                apigw.MethodResponse(
+                    status_code="200",
+                    response_parameters={
+                        'method.response.header.Access-Control-Allow-Origin': True
+                    }
+                )
+            ]
+        )
 
     def create_file_upload_prerequisites(self, api, search_engine_key, vpc=None, vpc_subnets=None):
         # Now hardcode for testing first
@@ -905,6 +939,55 @@ class LambdaVPCStack(Stack):
             api=api,
             knowledge_base_handler_function=knowledge_base_handler_function
         )
+
+        """
+        7. Create Lambda for list all sagemaker endpoint  for front-end
+        """
+        function_name = 'endpoint_list'
+
+        _knowledge_base_role_policy = _iam.PolicyStatement(
+            actions=[
+                's3:AmazonS3FullAccess',
+                'lambda:AWSLambdaBasicExecutionRole',
+                'secretsmanager:SecretsManagerReadWrite'
+            ],
+            resources=['*']  # 可根据需求进行更改
+        )
+        endpoint_list_role = _iam.Role(
+            self, 'endpoint_list_role',
+            assumed_by=_iam.ServicePrincipal('lambda.amazonaws.com')
+        )
+        endpoint_list_role.add_to_policy(_data_load_role_policy)
+
+        endpoint_list_role.add_managed_policy(
+            _iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole")
+        )
+
+        endpoint_list_role.add_managed_policy(
+            _iam.ManagedPolicy.from_aws_managed_policy_name("AmazonSageMakerReadOnly")
+        )
+
+        endpoint_list_function = _lambda.Function(
+            self, function_name,
+            function_name=function_name,
+            runtime=_lambda.Runtime.PYTHON_3_9,
+            role=endpoint_list_role,
+            #layers=[self.langchain_processor_qa_layer],
+            code=_lambda.Code.from_asset('../lambda/' + function_name),
+            handler='lambda_function' + '.lambda_handler',
+            timeout=Duration.minutes(10),
+            vpc=vpc,
+            vpc_subnets=vpc_subnets,
+            reserved_concurrent_executions=20
+        )
+        endpoint_list_function.add_environment("host", search_engine_key)
+
+        self.create_apigw_resource_method_for_endpoint_list(
+            api=api,
+            endpoint_list_function=endpoint_list_function
+        )
+
+
 
 
         # Create Integration Options
