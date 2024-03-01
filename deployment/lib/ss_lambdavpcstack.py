@@ -980,7 +980,6 @@ class LambdaVPCStack(Stack):
             vpc_subnets=vpc_subnets,
             reserved_concurrent_executions=20
         )
-        endpoint_list_function.add_environment("host", search_engine_key)
 
         self.create_apigw_resource_method_for_endpoint_list(
             api=api,
