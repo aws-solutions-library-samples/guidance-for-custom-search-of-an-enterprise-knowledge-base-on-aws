@@ -346,23 +346,21 @@ export default function ModalCreateSession({ dismissModal, modalVisible }) {
                 <Input {...bindName} placeholder="Data search" />
               </FormField>
 
-              {lsSessionList.length === 0 ? null : (
-                <FormField
-                  label="Refer to an Existing Session"
-                  description="Select an existing session as template"
-                >
-                  <Select
-                    selectedOption={sessionTemplateOpt}
-                    onChange={({ detail }) =>
-                      setSessionTemplateOpt(detail.selectedOption)
-                    }
-                    options={lsSessionList.map(({ text, sessionId }) => ({
-                      value: sessionId,
-                      label: text,
-                    }))}
-                  />
-                </FormField>
-              )}
+              <FormField
+                label="Refer to an existing session or a template"
+                description="Select a template or an existing session as template"
+              >
+                <Select
+                  selectedOption={sessionTemplateOpt}
+                  onChange={({ detail }) =>
+                    setSessionTemplateOpt(detail.selectedOption)
+                  }
+                  options={lsSessionList.map(({ text, sessionId }) => ({
+                    value: sessionId,
+                    label: text,
+                  }))}
+                />
+              </FormField>
             </ColumnLayout>
 
             <Divider />

@@ -19,7 +19,7 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import useLsAppConfigs, { INIT_APP_CONFIGS } from 'src/hooks/useLsAppConfigs';
 import useLsSessionList from 'src/hooks/useLsSessionList';
-import genDefaultSessions from 'src/utils/genDefaultSessions';
+import PROMPT_TEMPLATES from 'src/utils/PROMPT_TEMPLATES';
 
 function FormInputWithDebounceAndToast({
   label,
@@ -180,21 +180,24 @@ const AppConfigs = () => {
             <SpaceBetween size="s" direction="horizontal">
               <Button
                 iconName="download"
-                disabled
-                onClick={() => {
-                  genDefaultSessions().forEach((session) =>
+                onClick={(e) => {
+                  e.preventDefault();
+                  PROMPT_TEMPLATES.forEach((session) =>
                     lsAddSessionItem(session)
                   );
-                  toast('Default sessions imported successfully!');
+                  toast.success(
+                    'Default session templates successfully imported!'
+                  );
                 }}
               >
-                Import default sessions
+                Import default session templates
               </Button>
               <Button
                 iconName="remove"
-                onClick={() => {
+                onClick={(e) => {
+                  e.preventDefault();
                   const bool = window?.confirm(
-                    'Confirm to clear all sessions?'
+                    'Confirm to clear all sessions? (This will clear session templates as well, however, you can import the default session templates again)'
                   );
                   if (bool) {
                     if (process.env.NODE_ENV === 'development') {
@@ -215,6 +218,7 @@ const AppConfigs = () => {
                     } else {
                       setLsSessionList([]);
                     }
+                    toast.success('Sessions cleared');
                   }
                 }}
               >
@@ -222,11 +226,15 @@ const AppConfigs = () => {
               </Button>
               <Button
                 iconName="remove"
-                onClick={() => {
+                onClick={(e) => {
+                  e.preventDefault();
                   const bool = window?.confirm(
                     'Confirm to reset all configs for the app?'
                   );
-                  if (bool) setAppConfigs(INIT_APP_CONFIGS);
+                  if (bool) {
+                    setAppConfigs(INIT_APP_CONFIGS);
+                    toast.success('App configurations have been reset');
+                  }
                 }}
               >
                 Reset All App Configs

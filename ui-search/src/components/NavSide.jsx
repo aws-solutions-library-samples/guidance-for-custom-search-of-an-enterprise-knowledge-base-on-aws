@@ -39,6 +39,7 @@ export default function NavSide() {
         {
           type: 'section',
           text: 'Sessions',
+          // items: lsSessionList.filter((item) => !!item.href),
           items: lsSessionList,
         },
         {
