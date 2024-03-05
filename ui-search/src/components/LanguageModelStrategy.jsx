@@ -61,6 +61,21 @@ const THIRD_PARTY_API_MODEL_NAMES = [
     value: 'meta.llama2-13b-chat-v1',
     modelType: ['bedrock', 'bedrock_api'],
   },
+  {
+    label: 'anthropic.claude-3-sonnet',
+    value: 'anthropic.claude-3-sonnet-20240229-v1:0',
+    modelType: ['bedrock', 'bedrock_api'],
+  },
+  {
+    label: 'mistral.mistral-7b',
+    value: 'mistral.mistral-7b-instruct-v0:2',
+    modelType: ['bedrock', 'bedrock_api'],
+  },
+  {
+    label: 'mistral.mixtral-8x7b',
+    value: 'mistral.mixtral-8x7b-instruct-v0:1',
+    modelType: ['bedrock', 'bedrock_api'],
+  },
 ];
 
 const LanguageModelStrategy = () => {
