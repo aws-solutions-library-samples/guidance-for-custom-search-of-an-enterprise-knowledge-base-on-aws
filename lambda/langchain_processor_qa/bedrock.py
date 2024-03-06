@@ -71,9 +71,11 @@ class LLMInputOutputAdapter:
 
     provider_to_output_key_map = {
         "anthropic": "completion",
+        "anthropic-v3": "text",
         "amazon": "outputText",
         "cohere": "text",
-        "meta":"generation"
+        "meta":"generation",
+        "mistral":"text"
     }
 
     @classmethod
@@ -101,7 +103,10 @@ class LLMInputOutputAdapter:
     def prepare_output(cls, provider: str, response: Any) -> str:
         if provider == "anthropic":
             response_body = json.loads(response.get("body").read().decode())
-            return response_body.get("completion")
+            if 'content' in response_body.keys():
+                return response_body.get("content")[0].get("text")
+            else:
+                return response_body.get("completion")
         else:
             response_body = json.loads(response.get("body").read())
 
@@ -111,6 +116,8 @@ class LLMInputOutputAdapter:
             return response_body.get("generations")[0].get("text")
         elif provider == "meta":
             return response_body.get("generation")
+        elif provider == "mistral":
+            return response_body.get("outputs")[0].get("text")
         else:
             return response_body.get("results")[0].get("outputText")
 
@@ -132,7 +139,20 @@ class LLMInputOutputAdapter:
             chunk = event.get("chunk")
             if chunk:
                 chunk_obj = json.loads(chunk.get("bytes").decode())
-                if provider == "cohere" and (
+                if provider == 'mistral':
+                    chunk_obj = chunk_obj['outputs'][0]
+                elif provider == 'anthropic' or provider == "anthropic-v3":
+                    if 'delta' in chunk_obj.keys() and 'type' in chunk_obj.keys():
+                        if chunk_obj['type'] == 'content_block_delta':
+                            chunk_obj = chunk_obj['delta']
+                            if provider == 'anthropic':
+                                provider = "anthropic-v3"
+                        else:
+                            continue
+                    elif (provider == "anthropic-v3" and 'delta' not in chunk_obj.keys()) or \
+                         'message' in chunk_obj.keys() or 'content_block' in chunk_obj.keys():
+                        continue
+                elif provider == "cohere" and (
                     chunk_obj["is_finished"]
                     or chunk_obj[cls.provider_to_output_key_map[provider]]
                     == "<EOS_TOKEN>"
@@ -248,7 +268,8 @@ class BedrockBase(BaseModel, ABC):
         
         provider = self._get_provider()
         params = {**_model_kwargs, **kwargs}
-        input_body = LLMInputOutputAdapter.prepare_input(provider, prompt, params)
+        params["modelId"] = self.model_id
+        input_body = BedrockAdapter.prepare_input(provider, prompt, params)
         body = json.dumps(input_body)
         accept = "*/*"
         contentType = "application/json"

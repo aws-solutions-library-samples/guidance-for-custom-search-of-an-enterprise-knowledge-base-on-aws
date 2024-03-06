@@ -6,3 +6,4 @@ search-web-knn/node_modules
 *.pyc
 .idea/
 .~*.py
+*.ipynb_checkpoints

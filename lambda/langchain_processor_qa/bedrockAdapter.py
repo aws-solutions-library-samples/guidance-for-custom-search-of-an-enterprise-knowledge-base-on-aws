@@ -85,8 +85,25 @@ class BedrockAdapter:
         print('temperature:',temperature)
 
 
-        if modelId.find('claude') >=0:
+        if modelId.find('claude-v2') >=0 or modelId.find('claude-instant') >=0:
             input_body = {"prompt": prompt, "max_tokens_to_sample": max_tokens,"temperature": temperature}
+        elif modelId.find('claude-3') >=0:
+            input_body = {
+                "anthropic_version": "bedrock-2023-05-31",
+                "max_tokens": max_tokens,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": prompt
+                            }
+                        ]
+                    }
+                ],
+                "temperature":temperature
+            }
         elif modelId == 'amazon.titan-tg1-large':
             input_body = {"inputText": prompt,
                                      "textGenerationConfig" : {
@@ -102,6 +119,13 @@ class BedrockAdapter:
             input_body = {
                 "prompt": prompt,
                 "max_gen_len": max_tokens,
+                "temperature": temperature,
+                "top_p": 0.9
+            }
+        elif modelId.find('mistral') >=0:
+            input_body = {
+                "prompt": prompt,
+                "max_tokens": max_tokens,
                 "temperature": temperature,
                 "top_p": 0.9
             }

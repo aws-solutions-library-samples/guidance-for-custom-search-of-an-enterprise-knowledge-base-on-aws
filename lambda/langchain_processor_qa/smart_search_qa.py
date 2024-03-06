@@ -83,6 +83,8 @@ class SmartSearchQA:
                 parameters['max_tokens_to_sample'] = max_tokens
             elif provider == "meta":
                 parameters['max_gen_len'] = max_tokens
+            elif provider == "mistral":
+                parameters['max_tokens'] = max_tokens
             self.llm.model_kwargs = parameters
         elif model_type == 'llm_api':
             if model_name.find('Baichuan2') >= 0:
