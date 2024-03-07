@@ -784,7 +784,7 @@ class LambdaStack(Stack):
         """
         function_name = 'endpoint_list'
 
-        _knowledge_base_role_policy = _iam.PolicyStatement(
+        _endpoint_list_role_policy = _iam.PolicyStatement(
             actions=[
                 's3:AmazonS3FullAccess',
                 'lambda:AWSLambdaBasicExecutionRole',
