@@ -1002,3 +1002,258 @@ class LambdaStack(Stack):
         content_moderation_func.add_environment("content_moderation_api", content_moderation_api)
 
         return content_moderation_func
+
+    def create_apigw_resource_method_for_knowledge_base_handler(self, api, **kwargs):
+            knowledge_base_handler = api.root.add_resource('knowledge_base_handler')
+
+            jobs = knowledge_base_handler.add_resource(
+                        "jobs",
+                        default_cors_preflight_options=apigw.CorsOptions(
+                            allow_methods=['GET','POST'],
+                            allow_origins=apigw.Cors.ALL_ORIGINS)
+                    )
+            jobs_id = jobs.add_resource(
+                        "{id}",
+                        default_cors_preflight_options=apigw.CorsOptions(
+                            allow_methods=['PUT','DELETE','GET'],
+                            allow_origins=apigw.Cors.ALL_ORIGINS)
+                    )
+            presignurl = knowledge_base_handler.add_resource(
+                        "presignurl",
+                        default_cors_preflight_options=apigw.CorsOptions(
+                            allow_methods=['POST'],
+                            allow_origins=apigw.Cors.ALL_ORIGINS)
+                    )
+            indices = knowledge_base_handler.add_resource(
+                        "indices",
+                        default_cors_preflight_options=apigw.CorsOptions(
+                            allow_methods=['GET'],
+                            allow_origins=apigw.Cors.ALL_ORIGINS)
+                    )
+            
+            get_presignurl_function = kwargs.get('get_presignurl_function')
+            create_job_function = kwargs.get('create_job_function')
+            update_job_function = kwargs.get('update_job_function')
+
+            list_jobs_function = kwargs.get('list_jobs_function')
+            get_indice_list_function = kwargs.get('get_indice_list_function')
+
+            def create_api_integration(function,resource,method):
+
+                sub_resource_integration = apigw.LambdaIntegration(
+                    function,
+                    proxy=True,
+                    integration_responses=[
+                        apigw.IntegrationResponse(
+                            status_code="200",
+                            response_parameters={
+                                'method.response.header.Access-Control-Allow-Origin': "'*'"
+                            }
+                        )
+                    ]
+                )
+                resource.add_method(
+                    method,
+                    sub_resource_integration,
+                    method_responses=[
+                        apigw.MethodResponse(
+                            status_code="200",
+                            response_parameters={
+                                'method.response.header.Access-Control-Allow-Origin': True
+                            }
+                        )
+                    ]
+                )
+
+            #POST knowledge_base_handler/jobs
+            create_api_integration(create_job_function,jobs,"POST")  
+            #GET  knowledge_base_handler/jobs
+            create_api_integration(list_jobs_function,jobs,"GET")  
+            #PUT  knowledge_base_handler/jobs/{id}
+            create_api_integration(update_job_function,jobs_id,"PUT") 
+
+            #POST knowledge_base_handler/presignurl
+            create_api_integration(get_presignurl_function,presignurl,"POST")
+            #GET knowledge_base_handler/indices
+            create_api_integration(get_indice_list_function,indices,"GET")
+
+    def create_knowledge_base_handler(self, api, search_engine_key):
+
+            REGION = os.getenv('AWS_REGION', '')
+            EMBEDDING_ENDPOINT_NAME = "bedrock-titan-embed"
+            SEARCH_ENGINE = "opensearch"
+            PRIMARY_KEY = 'id'
+
+            _knowledge_base_role_policy = _iam.PolicyStatement(
+                actions=[
+                    'sagemaker:InvokeEndpointAsync',
+                    'sagemaker:InvokeEndpoint',
+                    's3:AmazonS3FullAccess',
+                    'lambda:AWSLambdaBasicExecutionRole',
+                    'secretsmanager:GetSecretValue',
+                    'bedrock:*',
+                    'dynamodb:AmazonDynamoDBFullAccess',
+                    'logs:*'
+
+                ],
+                resources=['*']  # 可根据需求进行更改
+            )
+
+            knowledge_base_handler_role = _iam.Role(
+                self, 'knowledge_base_handler_rolev2',
+                assumed_by=_iam.ServicePrincipal('lambda.amazonaws.com')
+            )
+            knowledge_base_handler_role.add_to_policy(_knowledge_base_role_policy)
+
+            job_table = dynamodb.Table(
+                self, "job table",
+                partition_key=dynamodb.Attribute(
+                    name="id",
+                    type=dynamodb.AttributeType.STRING,
+                ),
+                removal_policy=RemovalPolicy.DESTROY,
+                stream=dynamodb.StreamViewType.NEW_IMAGE
+            )
+
+            function_name = 'dataload',
+            ddb_dataload_function = _lambda.Function(
+                self, 'dataload',
+                function_name='dataload',
+                role=knowledge_base_handler_role,
+                runtime=_lambda.Runtime.FROM_IMAGE,
+                handler = _lambda.Handler.FROM_IMAGE,
+                code=_lambda.Code.from_asset_image(directory="../lambda/knowledge_base_handler/dataload"),
+                timeout=Duration.minutes(15),
+                environment={
+                    "EMBEDDING_ENDPOINT_NAME": EMBEDDING_ENDPOINT_NAME,
+                    "BUCKET": self.bucket.bucket_name,
+                    "HOST": search_engine_key,
+                    "REGION": REGION,
+                    "SEARCH_ENGINE": SEARCH_ENGINE,
+                    "TABLE_NAME": job_table.table_name,
+                    "PRIMARY_KEY": PRIMARY_KEY
+            }
+            )
+
+            self.bucket.grant_read_write(knowledge_base_handler_role)
+            job_table.grant_full_access(knowledge_base_handler_role)
+
+            ddb_dataload_function.add_event_source(DynamoEventSource(job_table,
+                starting_position=_lambda.StartingPosition.TRIM_HORIZON,
+                batch_size=5))  # Adjust batch size as needed
+
+            function_name = 'createJob',
+            create_job_function = _lambda.Function(
+                self, 'createJob',
+                function_name='createJob',
+                runtime=_lambda.Runtime.PYTHON_3_9,
+                role=knowledge_base_handler_role,
+                layers=[self.langchain_processor_qa_layer],
+                code=_lambda.Code.from_asset(f"../lambda/knowledge_base_handler/crud"),
+                handler='create' + '.handler',
+                timeout=Duration.minutes(5),
+                environment={
+                    "EMBEDDING_ENDPOINT_NAME": EMBEDDING_ENDPOINT_NAME,
+                    "BUCKET": self.bucket.bucket_name,
+                    "HOST": search_engine_key,
+                    "REGION": REGION,
+                    "SEARCH_ENGINE": SEARCH_ENGINE,
+                    "TABLE_NAME": job_table.table_name,
+                    "PRIMARY_KEY": PRIMARY_KEY
+            }
+            )
+
+            function_name = 'listJobs',
+            list_jobs_function = _lambda.Function(
+                self, 'listJobs',
+                function_name='listJobs',
+                runtime=_lambda.Runtime.PYTHON_3_9,
+                role=knowledge_base_handler_role,
+                layers=[self.langchain_processor_qa_layer],
+                code=_lambda.Code.from_asset(f"../lambda/knowledge_base_handler/crud"),
+                handler='get-all' + '.handler',
+                timeout=Duration.minutes(5),
+                environment={
+                    "EMBEDDING_ENDPOINT_NAME": EMBEDDING_ENDPOINT_NAME,
+                    "BUCKET": self.bucket.bucket_name,
+                    "HOST": search_engine_key,
+                    "REGION": REGION,
+                    "SEARCH_ENGINE": SEARCH_ENGINE,
+                    "TABLE_NAME": job_table.table_name,
+                    "PRIMARY_KEY": PRIMARY_KEY
+            }
+            )
+
+            function_name = 'getPresignURL',
+            get_presignurl_function = _lambda.Function(
+                self, 'getPresignURL',
+                function_name='getPresignURL',
+                runtime=_lambda.Runtime.PYTHON_3_9,
+                role=knowledge_base_handler_role,
+                layers=[self.langchain_processor_qa_layer],
+                code=_lambda.Code.from_asset(f"../lambda/knowledge_base_handler/s3action"),
+                handler='get-presign-url' + '.handler',
+                timeout=Duration.minutes(5),
+                environment={
+                    "EMBEDDING_ENDPOINT_NAME": EMBEDDING_ENDPOINT_NAME,
+                    "BUCKET": self.bucket.bucket_name,
+                    "HOST": search_engine_key,
+                    "REGION": REGION,
+                    "SEARCH_ENGINE": SEARCH_ENGINE,
+                    "TABLE_NAME": job_table.table_name,
+                    "PRIMARY_KEY": PRIMARY_KEY
+            }
+            )
+
+            function_name = 'getIndexList',
+            get_indice_list_function = _lambda.Function(
+                self, 'getIndiceList',
+                function_name='getIndiceList',
+                runtime=_lambda.Runtime.PYTHON_3_9,
+                role=knowledge_base_handler_role,
+                layers=[self.langchain_processor_qa_layer],
+                code=_lambda.Code.from_asset('../lambda/knowledge_base_handler/indices'),
+                handler='lambda_function' + '.lambda_handler',
+                timeout=Duration.minutes(5),
+                reserved_concurrent_executions=20,
+                environment={
+                    "EMBEDDING_ENDPOINT_NAME": EMBEDDING_ENDPOINT_NAME,
+                    "BUCKET": self.bucket.bucket_name,
+                    "HOST": search_engine_key,
+                    "REGION": REGION,
+                    "SEARCH_ENGINE": SEARCH_ENGINE,
+                    "TABLE_NAME": job_table.table_name,
+                    "PRIMARY_KEY": PRIMARY_KEY
+            }
+            )
+
+            function_name = 'UpdateJob',
+            update_job_function = _lambda.Function(
+                self, 'UpdateJob',
+                function_name='UpdateJob',
+                runtime=_lambda.Runtime.PYTHON_3_9,
+                role=knowledge_base_handler_role,
+                layers=[self.langchain_processor_qa_layer],
+                code=_lambda.Code.from_asset('../lambda/knowledge_base_handler/crud'),
+                handler='update-one' + '.handler',
+                timeout=Duration.minutes(5),
+                reserved_concurrent_executions=20,
+                environment={
+                    "EMBEDDING_ENDPOINT_NAME": EMBEDDING_ENDPOINT_NAME,
+                    "BUCKET": self.bucket.bucket_name,
+                    "HOST": search_engine_key,
+                    "REGION": REGION,
+                    "SEARCH_ENGINE": SEARCH_ENGINE,
+                    "TABLE_NAME": job_table.table_name,
+                    "PRIMARY_KEY": PRIMARY_KEY
+            }
+            )
+
+            self.create_apigw_resource_method_for_knowledge_base_handler(
+                api=api,
+                create_job_function=create_job_function,
+                get_presignurl_function=get_presignurl_function,
+                list_jobs_function=list_jobs_function,
+                get_indice_list_function=get_indice_list_function,
+                update_job_function=update_job_function
+            )
