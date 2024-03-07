@@ -1,6 +1,6 @@
 #!/bin/bash
 
-sudo yum install -y pip git npm docker
+sudo yum install -y pip npm 
 sudo npm install -g aws-cdk
 
 # Get the region of the EC2 instance
@@ -15,8 +15,3 @@ else
     pip install -r requirements.txt
 fi
 
-#set up docker
-sudo usermod -aG docker ${USER}
-newgrp docker
-groups
-sudo service docker start
