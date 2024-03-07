@@ -20,6 +20,7 @@ from aws_cdk import (
 )
 from aws_cdk.aws_apigatewayv2_integrations_alpha import WebSocketLambdaIntegration
 from aws_cdk import aws_apigatewayv2_alpha as apigwv2
+from aws_cdk.aws_lambda_event_sources import DynamoEventSource
 import os
 
 binary_media_types = ["multipart/form-data"]
@@ -367,6 +368,7 @@ class LambdaStack(Stack):
             api=api,
             func=content_moderation_func
         )
+        self.create_knowledge_base_handler(api, search_engine_key)
 
         self.apigw = api
 
@@ -572,40 +574,6 @@ class LambdaStack(Stack):
         langchain_processor_qa_function.add_environment("dynamodb_table_name", chat_table.table_name)
         cdk.CfnOutput(self, 'chat_table_name', value=chat_table.table_name, export_name='ChatTableName')
 
-    def create_apigw_resource_method_for_knowledge_base_handler(self, api, knowledge_base_handler_function):
-
-        knowledge_base_handler_resource = api.root.add_resource(
-            'knowledge_base_handler',
-            default_cors_preflight_options=apigw.CorsOptions(
-                allow_methods=['GET', 'OPTIONS'],
-                allow_origins=apigw.Cors.ALL_ORIGINS)
-        )
-
-        knowledge_base_handler_integration = apigw.LambdaIntegration(
-            knowledge_base_handler_function,
-            proxy=True,
-            integration_responses=[
-                apigw.IntegrationResponse(
-                    status_code="200",
-                    response_parameters={
-                        'method.response.header.Access-Control-Allow-Origin': "'*'"
-                    }
-                )
-            ]
-        )
-
-        knowledge_base_handler_resource.add_method(
-            'GET',
-            knowledge_base_handler_integration,
-            method_responses=[
-                apigw.MethodResponse(
-                    status_code="200",
-                    response_parameters={
-                        'method.response.header.Access-Control-Allow-Origin': True
-                    }
-                )
-            ]
-        )
     def create_apigw_resource_method_for_endpoint_list(self, api, endpoint_list_function):
 
         endpoint_list_resource = api.root.add_resource(
@@ -672,6 +640,8 @@ class LambdaStack(Stack):
                             removal_policy=RemovalPolicy.DESTROY
                             )
 
+        self.bucket = _bucket
+        
         """
         2. Create Execution Role for Uploading file to S3
         IAM RoleName: custom-role-document-ai-upload-to-s3
@@ -810,57 +780,7 @@ class LambdaStack(Stack):
         }
 
         """
-        6. Create Lambda for list all indices from OpenSearch for front-end
-        """
-        function_name = 'knowledge_base_handler'
-
-        _knowledge_base_role_policy = _iam.PolicyStatement(
-            actions=[
-                's3:AmazonS3FullAccess',
-                'lambda:AWSLambdaBasicExecutionRole',
-                'secretsmanager:SecretsManagerReadWrite'
-            ],
-            resources=['*']  # 可根据需求进行更改
-        )
-        knowledge_base_handler_role = _iam.Role(
-            self, 'knowledge_base_handler_role',
-            assumed_by=_iam.ServicePrincipal('lambda.amazonaws.com')
-        )
-        knowledge_base_handler_role.add_to_policy(_data_load_role_policy)
-
-        knowledge_base_handler_role.add_managed_policy(
-            _iam.ManagedPolicy.from_aws_managed_policy_name("service-role/AWSLambdaBasicExecutionRole")
-        )
-
-        knowledge_base_handler_role.add_managed_policy(
-            _iam.ManagedPolicy.from_aws_managed_policy_name("SecretsManagerReadWrite")
-        )
-
-        knowledge_base_handler_role.add_managed_policy(
-            _iam.ManagedPolicy.from_aws_managed_policy_name("AmazonS3FullAccess")
-        )
-
-        knowledge_base_handler_function = _lambda.Function(
-            self, function_name,
-            function_name=function_name,
-            runtime=_lambda.Runtime.PYTHON_3_9,
-            role=knowledge_base_handler_role,
-            layers=[self.langchain_processor_qa_layer],
-            code=_lambda.Code.from_asset('../lambda/' + function_name),
-            handler='lambda_function' + '.lambda_handler',
-            timeout=Duration.minutes(10),
-            reserved_concurrent_executions=20
-        )
-        knowledge_base_handler_function.add_environment("host", search_engine_key)
-
-        self.create_apigw_resource_method_for_knowledge_base_handler(
-            api=api,
-            knowledge_base_handler_function=knowledge_base_handler_function
-        )
-
-
-        """
-        7. Create Lambda for list all sagemaker endpoint  for front-end
+        6. Create Lambda for list all sagemaker endpoint  for front-end
         """
         function_name = 'endpoint_list'
 
