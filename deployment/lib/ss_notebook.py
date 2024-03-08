@@ -57,6 +57,7 @@ class NotebookStack(cdk.Stack):
         self.notebook_job_role.add_managed_policy(_iam.ManagedPolicy.from_aws_managed_policy_name('AmazonSageMakerFullAccess'))
         self.notebook_job_role.add_managed_policy(_iam.ManagedPolicy.from_aws_managed_policy_name('SecretsManagerReadWrite'))
         self.notebook_job_role.add_managed_policy(_iam.ManagedPolicy.from_aws_managed_policy_name('AmazonDynamoDBFullAccess'))
+        self.notebook_job_role.add_managed_policy(_iam.ManagedPolicy.from_aws_managed_policy_name('AmazonBedrockFullAccess'))
 
         # notebookDeployment is more flexible , while using function is more faster with fixed value
         if self.node.try_get_context("notebook_deployment"):
