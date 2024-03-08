@@ -639,6 +639,16 @@ class LambdaStack(Stack):
                             versioned=False,
                             removal_policy=RemovalPolicy.DESTROY
                             )
+        
+        _bucket.add_cors_rule(
+            allowed_headers=["*"],
+            allowed_methods=[
+                             s3.HttpMethods.GET,
+                             s3.HttpMethods.PUT,
+                             s3.HttpMethods.POST
+                             ],
+            allowed_origins=["*"]
+            )
 
         self.bucket = _bucket
         
