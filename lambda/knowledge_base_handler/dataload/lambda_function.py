@@ -72,7 +72,6 @@ def lambda_handler(event, context):
     language = body.get('language', {}).get('S')
     object_key = body.get('sourceKey', {}).get('S')
 
-
     #init_knowledge_vector needed paratmers
     chunk_size = body.get('chunk_size', 1500)
     chunk_overlap = body.get('chunk_overlap', 10)
