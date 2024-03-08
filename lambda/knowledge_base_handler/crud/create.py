@@ -35,11 +35,12 @@ def handler(event, context):
         return {'statusCode': 400, 'body': 'invalid request, you are missing the parameter body'}
 
     item = event['body'] if isinstance(event['body'], dict) else json.loads(event['body'])
-    #item["jobInfo"]["createdAt"] = int(time.time())
-    #item  = item["jobInfo"]
+    item["jobInfo"]["createdAt"] = int(time.time())
+    item  = item["jobInfo"]
     #add a create time in to item["jobInfo"] use current timestamp
     print(f"item:{item}")
-    item[PRIMARY_KEY] = str(uuid4())
+    if not item.get(id):
+        item[PRIMARY_KEY] = str(uuid4())
     print(f"item:{item}")    
 
     try:
@@ -52,7 +53,7 @@ def handler(event, context):
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
             },
-            'body': json.dumps(f'job id:{item[PRIMARY_KEY]}')
+            'body': json.dumps(item)
             }
     except Exception as e:
         error_response = RESERVED_RESPONSE if 'ValidationException' in str(e) and 'reserved keyword' in str(e) else DYNAMODB_EXECUTION_ERROR
