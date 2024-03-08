@@ -42,13 +42,9 @@ const FILE_STATUS = {
 const indexNameIsInvalid = (indexName) => /^\.|.*[A-Z|\s].*/.test(indexName);
 
 const UploadFiles = () => {
-  const { urlApiGateway, s3FileUpload } = useLsAppConfigs();
+  const { urlApiGateway } = useLsAppConfigs();
   const [indexNameList, loadingIndexNameList] = useIndexNameList();
-  const [
-    OptionsSagemakerEndpoint,
-    OptionsEmbeddingEndpoint,
-    loadingEndpointList,
-  ] = useEndpointList();
+  const [OptionsEmbeddingEndpoint, loadingEndpointList] = useEndpointList();
 
   const [searchEngine, bindSearchEngine, resetSearchEngine] = useInput(
     OPTIONS_SEARCH_ENGINE[0].value
@@ -149,8 +145,8 @@ const UploadFiles = () => {
 
                       const resUploadFileToS3 = await fetch(presignedUrl, {
                         method: 'PUT',
-                        headers: { 'Content-Type': 'multipart/form-data' },
-                        body: formData,
+                        // headers: { 'Content-Type': 'multipart/form-data' },
+                        body: file,
                       });
 
                       if (!resUploadFileToS3.ok)
