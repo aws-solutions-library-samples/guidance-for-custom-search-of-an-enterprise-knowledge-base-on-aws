@@ -18,9 +18,9 @@ def get_upload_url(event):
     print(event)
     json_string = event.get("body")
     body = json.loads(json_string)
-    filename = body.get('filename')
-    filetype = body.get('filetype')
-    key = body.get('key')
+    filename = body.get('fileName')
+    filetype = body.get('contentType')
+    key = body.get('sourceKey')
     print(filename)
     print(filetype)
     print(key)
@@ -53,6 +53,6 @@ def get_upload_url(event):
             },
             'body': json.dumps({
         'uploadURL': upload_url,
-        'Key': key
+        'sourceKey': key
     })
             }

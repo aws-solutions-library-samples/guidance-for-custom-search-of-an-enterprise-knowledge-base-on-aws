@@ -7,3 +7,4 @@ search-web-knn/node_modules
 .idea/
 .~*.py
 *.ipynb_checkpoints
+myenv
