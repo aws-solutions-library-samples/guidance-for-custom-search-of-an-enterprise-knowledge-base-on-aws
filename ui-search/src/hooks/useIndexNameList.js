@@ -18,7 +18,7 @@ const useIndexNameList = (fetchNow = true) => {
     if (!urlApiGateway) return setLoading(false);
     let timer = setTimeout(() => {
       if (fetchNow) {
-        fetch(`${urlApiGateway}/knowledge_base_handler`)
+        fetch(`${urlApiGateway}/knowledge_base_handler/indices`)
           .then((res) => {
             if (res.ok) return res.json();
             throw new Error('Network response was not ok.');
