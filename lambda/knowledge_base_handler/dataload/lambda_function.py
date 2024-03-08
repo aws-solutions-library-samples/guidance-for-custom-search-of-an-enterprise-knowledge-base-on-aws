@@ -33,32 +33,6 @@ s3_cli = boto3.client('s3')
 credentials = boto3.Session().get_credentials()
 auth = AWSV4SignerAuth(credentials, REGION)
 
-def get_param_from_apigw():
-    #body processing
-    if isinstance(event, bytes):
-        print("byte type, convert to string")
-        event = event.decode('utf-8')
-        event = json.loads(event)
-    
-    body = json.loads(event.get('body'))
-
-    #init_cfg needed paramters
-    index = body.get('index', "smartsearch_test_index")
-    language = body.get('language', "chinese")
-
-    #init_knowledge_vector needed paratmers
-    chunk_size = body.get('chunk_size', 1500)
-    chunk_overlap = body.get('chunk_overlap', 10)
-    sep_word_len = body.get('sep_word_len', 2000)
-    qa_title_name = body.get('qa_title_name', '标题')
-    split_to_sentence_paragraph = body.get('split_to_sentence_paragraph', True)
-    paragraph_include_sentence_num = body.get('paragraph_include_sentence_num', 3)
-    text_max_length = body.get('text_max_length', 350)
-    pdf_to_html = body.get('pdf_to_html', False)
-    text_field = body.get('text_field', 'paragraph')
-    vector_field = body.get('vector_field', 'sentence_vector')
-    object_key = body.get('source_key', "")
-
 def update_item(key, update_expression, expression_values, expression_keys):
     # Create a DynamoDB resource
     dynamodb = boto3.resource('dynamodb')
@@ -96,7 +70,7 @@ def lambda_handler(event, context):
     itemId = body.get('id', {}).get('S')
     index =  body.get('index', {}).get('S')
     language = body.get('language', {}).get('S')
-    object_key = body.get('source_key', {}).get('S')
+    object_key = body.get('sourceKey', {}).get('S')
 
 
     #init_knowledge_vector needed paratmers
