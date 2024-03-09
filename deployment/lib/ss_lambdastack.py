@@ -15,12 +15,14 @@ from aws_cdk import (
     aws_s3 as s3,
     aws_s3_notifications as s3n,
     aws_iam as _iam,
+    aws_sqs as sqs,
     ContextProvider,
     RemovalPolicy
 )
 from aws_cdk.aws_apigatewayv2_integrations_alpha import WebSocketLambdaIntegration
 from aws_cdk import aws_apigatewayv2_alpha as apigwv2
 from aws_cdk.aws_lambda_event_sources import DynamoEventSource
+from aws_cdk.aws_lambda_event_sources import SqsEventSource
 import os
 
 binary_media_types = ["multipart/form-data"]
@@ -1044,6 +1046,13 @@ class LambdaStack(Stack):
                 removal_policy=RemovalPolicy.DESTROY,
                 stream=dynamodb.StreamViewType.NEW_IMAGE
             )
+            
+            # Create an SQS queue
+            queue = sqs.Queue(
+                self, "MyQueue",
+                queue_name="my-queue",
+                visibility_timeout=Duration.seconds(300),
+            )
 
             function_name = 'dataload',
             ddb_dataload_function = _lambda.Function(
@@ -1064,13 +1073,16 @@ class LambdaStack(Stack):
                     "PRIMARY_KEY": PRIMARY_KEY
             }
             )
-
+    
+            ddb_dataload_function.add_event_source(SqsEventSource(queue))
+            queue.grant_consume_messages(knowledge_base_handler_role)
+            queue.grant_send_messages(knowledge_base_handler_role)
             self.bucket.grant_read_write(knowledge_base_handler_role)
             job_table.grant_full_access(knowledge_base_handler_role)
 
-            ddb_dataload_function.add_event_source(DynamoEventSource(job_table,
-                starting_position=_lambda.StartingPosition.TRIM_HORIZON,
-                batch_size=5))  # Adjust batch size as needed
+            #ddb_dataload_function.add_event_source(DynamoEventSource(job_table,
+            #    starting_position=_lambda.StartingPosition.TRIM_HORIZON,
+            #    batch_size=5))  # Adjust batch size as needed
 
             function_name = 'createJob',
             create_job_function = _lambda.Function(
@@ -1079,7 +1091,7 @@ class LambdaStack(Stack):
                 runtime=_lambda.Runtime.PYTHON_3_9,
                 role=knowledge_base_handler_role,
                 layers=[self.langchain_processor_qa_layer],
-                code=_lambda.Code.from_asset(f"../lambda/knowledge_base_handler/crud"),
+                code=_lambda.Code.from_asset(f"../lambda/knowledge_base_handler/upload_trigger"),
                 handler='create' + '.handler',
                 timeout=Duration.minutes(5),
                 environment={
