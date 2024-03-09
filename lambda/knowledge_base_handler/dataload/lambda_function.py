@@ -73,7 +73,7 @@ def lambda_handler(event, context):
     object_key = body.get('sourceKey', {}).get('S')
 
     #init_knowledge_vector needed paratmers
-    chunk_size = body.get('chunk_size', 1500)
+    chunk_size = body.get('chunkSize', 1500)
     chunk_overlap = body.get('chunk_overlap', 10)
     sep_word_len = body.get('sep_word_len', 2000)
     qa_title_name = body.get('qa_title_name', '标题')
@@ -115,7 +115,8 @@ def lambda_handler(event, context):
                  expression_values={':jobStatus': 'PROCESSING'},
                  expression_keys={'#jobStatus': 'jobStatus'}
             )
-
+            print("*****chunk_size*****")
+            print(chunk_size)
             now1 = datetime.now()#begin time
             loaded_files = dataload.init_knowledge_vector(
                                                           filepath=local_file_path,
