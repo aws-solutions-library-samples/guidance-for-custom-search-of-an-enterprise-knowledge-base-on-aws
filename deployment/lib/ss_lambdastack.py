@@ -1070,7 +1070,8 @@ class LambdaStack(Stack):
                     "REGION": REGION,
                     "SEARCH_ENGINE": SEARCH_ENGINE,
                     "TABLE_NAME": job_table.table_name,
-                    "PRIMARY_KEY": PRIMARY_KEY
+                    "PRIMARY_KEY": PRIMARY_KEY,
+                    "QUEUE": queue.queue_name
             }
             )
     
@@ -1101,7 +1102,9 @@ class LambdaStack(Stack):
                     "REGION": REGION,
                     "SEARCH_ENGINE": SEARCH_ENGINE,
                     "TABLE_NAME": job_table.table_name,
-                    "PRIMARY_KEY": PRIMARY_KEY
+                    "PRIMARY_KEY": PRIMARY_KEY,
+                    "QUEUE": queue.queue_name
+
             }
             )
 

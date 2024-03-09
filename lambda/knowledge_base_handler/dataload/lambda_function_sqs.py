@@ -18,6 +18,7 @@ PORT = 443
 BULK_SIZE = 10000000
 TABLE_NAME = os.getenv('TABLE_NAME', '')
 PRIMARY_KEY = os.getenv('PRIMARY_KEY', '')
+QUEUE = os.getenv('QUEUE', '')
 
 # retrieve secret manager value by key using boto3                                             
 sm_client = boto3.client('secretsmanager')
