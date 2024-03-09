@@ -166,6 +166,12 @@ def lambda_handler(event, context):
         
     except Exception as e:
         traceback.print_exc()
+        update_item(
+                 key={PRIMARY_KEY: itemId},
+                 update_expression="SET #jobStatus=:jobStatus",
+                 expression_values={':jobStatus': 'FAILED'},
+                 expression_keys={'#jobStatus': 'jobStatus'}
+            )
         return {
             'statusCode': 400,
             'body': str(e)
