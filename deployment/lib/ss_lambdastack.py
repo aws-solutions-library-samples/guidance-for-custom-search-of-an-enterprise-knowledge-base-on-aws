@@ -1051,7 +1051,7 @@ class LambdaStack(Stack):
             queue = sqs.Queue(
                 self, "MyQueue",
                 queue_name="my-queue",
-                visibility_timeout=Duration.seconds(300),
+                visibility_timeout=Duration.seconds(900),
             )
 
             function_name = 'dataload',
