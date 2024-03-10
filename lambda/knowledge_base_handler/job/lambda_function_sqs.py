@@ -18,6 +18,7 @@ PORT = 443
 BULK_SIZE = 10000000
 TABLE_NAME = os.getenv('TABLE_NAME', '')
 PRIMARY_KEY = os.getenv('PRIMARY_KEY', '')
+QUEUE = os.getenv('QUEUE', '')
 
 # retrieve secret manager value by key using boto3                                             
 sm_client = boto3.client('secretsmanager')
@@ -51,27 +52,32 @@ def update_item(key, update_expression, expression_values, expression_keys):
     return response
 
 def lambda_handler(event, context):
-    
+
+    body = json.loads(event["Records"][0]["body"])
+    itemId = body.get('id','')
+    index =  body.get('index','smartsearch_test_index')
+    language = body.get('language','chinese')
+    object_key = body.get('sourceKey','')
+    chunk_size = int(body.get('chunkSize','200'))
+ 
     #if event is bytes, then convert it to dict
     if isinstance(event, bytes):
         print("byte type, convert to string")
         event = event.decode('utf-8')
         event = json.loads(event)
     
-    eventName =  event.get('Records', [{}])[0].get('eventName')
-    if eventName != "INSERT":
-        return {
-            'statusCode': 200,
-            'body': f"Not a INSERT event, nothing to do, session aborted'"
-        }
-
-    
-    body = event.get('Records', [{}])[0].get('dynamodb', {}).get('NewImage', {})
-    itemId = body.get('id', {}).get('S')
-    index =  body.get('index', {}).get('S')
-    language = body.get('language', {}).get('S')
-    object_key = body.get('sourceKey', {}).get('S')
-    chunk_size = int(body.get('chunkSize', {'N': '1500'} ).get('N'))
+    #eventName =  event.get('Records', [{}])[0].get('eventName')
+    #if eventName != "INSERT":
+    #    return {
+    #        'statusCode': 200,
+    #        'body': f"Not a INSERT event, nothing to do, session aborted'"
+    #    }
+    #body = event.get('Records', [{}])[0].get('dynamodb', {}).get('NewImage', {})
+    #itemId = body.get('id', {}).get('S')
+    #index =  body.get('index', {}).get('S')
+    #language = body.get('language', {}).get('S')
+    #object_key = body.get('sourceKey', {}).get('S')
+    #chunk_size = int(body.get('chunkSize', {'N': '1500'} ).get('N'))
 
     #init_knowledge_vector needed paratmers
     #chunk_size = body.get('chunkSize', 1500)

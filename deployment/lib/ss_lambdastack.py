@@ -1079,26 +1079,30 @@ class LambdaStack(Stack):
 
             deployment = s3deploy.BucketDeployment(self, "extraPythonFiles",
                 sources=[s3deploy.Source.asset("../lambda/knowledge_base_handler/job")],
+                destination_key_prefix="glue_job_assets",
                 destination_bucket=self.bucket
             )
+
+            GlueS3Prefix = f"s3://{self.bucket.bucket_name}/glue_job_assets",
+
 
             glue_job = glue.CfnJob(
                 self, "MyGlueJob",
                 name="my-glue-job",
-                role=knowledge_base_handler_role,
+                role=knowledge_base_handler_role.role_name,
                 command=glue.CfnJob.JobCommandProperty(
                     name="pythonshell",
-                    python_version="3",
-                    script_location=f"s3://{self.bucket}/extraPythonFiles/glue-job-script.py",
+                    python_version="3.9",
+                    script_location=f"s3://{self.bucket.bucket_name}/glue_job_assets/glue-job-script.py",
                 ),
                 default_arguments={
                     "--job-bookmark-option": "job-bookmark-disable",
-                    "--continuous-log-logGroup": "/aws-glue/python-jobs",
+                    "--TempDir": f"s3://{self.bucket.bucket_name}/temporary",
+                    "--extra-py-files": f"s3://{self.bucket.bucket_name}/glue_job_assets/smart_search_dataload.py,s3://{self.bucket.bucket_name}/glue_job_assets/bedrock.py,s3://{self.bucket.bucket_name}/glue_job_assets/chinese_text_splitter.py,s3://{self.bucket.bucket_name}/glue_job_assets/opensearch_vector_search.py",
+                    "--additional-python-modules": "tqdm==4.65.0,boto3==1.28.72,langchain==0.0.325,opensearch-py==2.3.2,docx2txt==0.8,pypdf==3.16.4,numexpr==2.8.4",
                 },
                 glue_version="3.0",
-                max_capacity=2.0,
-                number_of_workers=2,
-                worker_type="G.1X",
+                max_capacity=1.0
                 )
             ddb_dataload_function.add_event_source(SqsEventSource(queue))
             queue.grant_consume_messages(knowledge_base_handler_role)
