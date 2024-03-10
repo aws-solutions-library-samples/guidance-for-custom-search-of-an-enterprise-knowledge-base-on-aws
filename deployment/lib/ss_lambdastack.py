@@ -1078,7 +1078,7 @@ class LambdaStack(Stack):
             )
 
             deployment = s3deploy.BucketDeployment(self, "extraPythonFiles",
-                sources=[s3deploy.Source.asset("../lambda/knowledge_base_handler/job","extraPythonFiles")],
+                sources=[s3deploy.Source.asset("../lambda/knowledge_base_handler/job")],
                 destination_bucket=self.bucket
             )
 
