@@ -16,6 +16,8 @@ from aws_cdk import (
     aws_s3_notifications as s3n,
     aws_iam as _iam,
     aws_sqs as sqs,
+    aws_glue as glue,
+    aws_s3_deployment as s3deploy,
     ContextProvider,
     RemovalPolicy
 )
@@ -1074,6 +1076,26 @@ class LambdaStack(Stack):
                     "QUEUE": queue.queue_name
             }
             )
+
+            glue_job_script = "glue-job-script.py" 
+
+            glue_job = glue.Job(
+            self, "PythonShellJob",
+            executable=glue.JobExecutable.python_shell(
+                glue_version=glue.GlueVersion.V3_0,
+                python_version=glue.PythonVersion.THREE_NINE,
+                script=glue.Code.from_asset(os.path.join(os.path.dirname(__file__), "../lambda/job", glue_job_script)),
+            ),
+            max_concurrent_runs=200,
+            max_retries=1,
+            max_capacity=1,
+            role=knowledge_base_handler_role,
+            default_arguments={
+                "--CONTENT_TYPE": "ug",
+                "--EMBEDDING_LANG": "zh,zh,en,en",
+                "--EMBEDDING_TYPE": "similarity,relevance,similarity,relevance",
+            }
+        )
     
             ddb_dataload_function.add_event_source(SqsEventSource(queue))
             queue.grant_consume_messages(knowledge_base_handler_role)
