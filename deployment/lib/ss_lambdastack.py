@@ -1077,26 +1077,29 @@ class LambdaStack(Stack):
             }
             )
 
-            glue_job_script = "glue-job-script.py" 
+            deployment = s3deploy.BucketDeployment(self, "extraPythonFiles",
+                sources=[s3deploy.Source.asset("../lambda/knowledge_base_handler/job","extraPythonFiles")],
+                destination_bucket=self.bucket
+            )
 
-            glue_job = glue.Job(
-            self, "PythonShellJob",
-            executable=glue.JobExecutable.python_shell(
-                glue_version=glue.GlueVersion.V3_0,
-                python_version=glue.PythonVersion.THREE_NINE,
-                script=glue.Code.from_asset(os.path.join(os.path.dirname(__file__), "../lambda/job", glue_job_script)),
-            ),
-            max_concurrent_runs=200,
-            max_retries=1,
-            max_capacity=1,
-            role=knowledge_base_handler_role,
-            default_arguments={
-                "--CONTENT_TYPE": "ug",
-                "--EMBEDDING_LANG": "zh,zh,en,en",
-                "--EMBEDDING_TYPE": "similarity,relevance,similarity,relevance",
-            }
-        )
-    
+            glue_job = glue.CfnJob(
+                self, "MyGlueJob",
+                name="my-glue-job",
+                role=knowledge_base_handler_role,
+                command=glue.CfnJob.JobCommandProperty(
+                    name="pythonshell",
+                    python_version="3",
+                    script_location=f"s3://{self.bucket}/extraPythonFiles/glue-job-script.py",
+                ),
+                default_arguments={
+                    "--job-bookmark-option": "job-bookmark-disable",
+                    "--continuous-log-logGroup": "/aws-glue/python-jobs",
+                },
+                glue_version="3.0",
+                max_capacity=2.0,
+                number_of_workers=2,
+                worker_type="G.1X",
+                )
             ddb_dataload_function.add_event_source(SqsEventSource(queue))
             queue.grant_consume_messages(knowledge_base_handler_role)
             queue.grant_send_messages(knowledge_base_handler_role)
