@@ -44,7 +44,7 @@ const indexNameIsInvalid = (indexName) => /^\.|.*[A-Z|\s].*/.test(indexName);
 const UploadFiles = () => {
   const { urlApiGateway } = useLsAppConfigs();
   const [indexNameList, loadingIndexNameList] = useIndexNameList();
-  const [OptionsEmbeddingEndpoint, loadingEndpointList] = useEndpointList();
+  const [_, OptionsEmbeddingEndpoint, loadingEndpointList] = useEndpointList();
 
   const [searchEngine, bindSearchEngine, resetSearchEngine] = useInput(
     OPTIONS_SEARCH_ENGINE[0].value
