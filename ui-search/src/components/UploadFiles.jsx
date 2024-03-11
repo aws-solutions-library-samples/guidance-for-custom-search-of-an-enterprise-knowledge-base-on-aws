@@ -258,10 +258,10 @@ const UploadFiles = () => {
                 <FormField
                   label="Chunk Size"
                   description=""
-                  constraintText="Value should be (0-200]"
+                  constraintText="Value should be [100-200]"
                   errorText={
-                    (chunkSize <= 0 || chunkSize > 200) &&
-                    'Value should be (0-200]'
+                    (chunkSize < 100 || chunkSize > 200) &&
+                    'Value should be [100-200]'
                   }
                 >
                   <Input
