@@ -255,11 +255,18 @@ const UploadFiles = () => {
                     empty="No matches found"
                   />
                 </FormField>
-                <FormField label="Chunk Size" description="">
+                <FormField
+                  label="Chunk Size"
+                  description=""
+                  constraintText="Value should be (0-200]"
+                  errorText={
+                    (chunkSize <= 0 || chunkSize > 200) &&
+                    'Value should be (0-200]'
+                  }
+                >
                   <Input
                     step={1}
                     type="number"
-                    disabled
                     value={chunkSize}
                     onChange={({ detail }) => setChunkSize(detail.value)}
                   />
