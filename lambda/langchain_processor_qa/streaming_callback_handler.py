@@ -26,8 +26,10 @@ class MyStreamingHandler(StreamingStdOutCallbackHandler ):
         #控制向前端发送消息的频率
         current_time = time.time() * 1000  # 获取当前时间（毫秒）
         if current_time - self.last_post_time <= 50:  # 检查时间间隔是否至少为50ms
-            self.last_post_time = current_time  # 更新上次发送时间
             return
+        else:
+            self.last_post_time = current_time  # 更新上次发送时间
+
 
         streaming_answer={
             'message': "streaming",
