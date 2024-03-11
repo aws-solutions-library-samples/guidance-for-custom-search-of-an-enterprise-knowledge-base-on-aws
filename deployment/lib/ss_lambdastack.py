@@ -967,7 +967,6 @@ class LambdaStack(Stack):
             
             get_presignurl_function = kwargs.get('get_presignurl_function')
             create_job_function = kwargs.get('create_job_function')
-            update_job_function = kwargs.get('update_job_function')
 
             list_jobs_function = kwargs.get('list_jobs_function')
             get_indice_list_function = kwargs.get('get_indice_list_function')
@@ -1003,8 +1002,6 @@ class LambdaStack(Stack):
             create_api_integration(create_job_function,jobs,"POST")  
             #GET  knowledge_base_handler/jobs
             create_api_integration(list_jobs_function,jobs,"GET")  
-            #PUT  knowledge_base_handler/jobs/{id}
-            create_api_integration(update_job_function,jobs_id,"PUT") 
 
             #POST knowledge_base_handler/presignurl
             create_api_integration(get_presignurl_function,presignurl,"POST")
@@ -1027,8 +1024,8 @@ class LambdaStack(Stack):
                     'secretsmanager:GetSecretValue',
                     'bedrock:*',
                     'dynamodb:AmazonDynamoDBFullAccess',
-                    'logs:*'
-
+                    'logs:*',
+                    'glue:*'
                 ],
                 resources=['*']  # 可根据需求进行更改
             )
@@ -1048,35 +1045,7 @@ class LambdaStack(Stack):
                 removal_policy=RemovalPolicy.DESTROY,
                 stream=dynamodb.StreamViewType.NEW_IMAGE
             )
-            
-            # Create an SQS queue
-            queue = sqs.Queue(
-                self, "MyQueue",
-                queue_name="my-queue",
-                visibility_timeout=Duration.seconds(900),
-            )
-
-            function_name = 'dataload',
-            ddb_dataload_function = _lambda.Function(
-                self, 'dataload',
-                function_name='dataload',
-                role=knowledge_base_handler_role,
-                runtime=_lambda.Runtime.FROM_IMAGE,
-                handler = _lambda.Handler.FROM_IMAGE,
-                code=_lambda.Code.from_asset_image(directory="../lambda/knowledge_base_handler/dataload"),
-                timeout=Duration.minutes(15),
-                environment={
-                    "EMBEDDING_ENDPOINT_NAME": EMBEDDING_ENDPOINT_NAME,
-                    "BUCKET": self.bucket.bucket_name,
-                    "HOST": search_engine_key,
-                    "REGION": REGION,
-                    "SEARCH_ENGINE": SEARCH_ENGINE,
-                    "TABLE_NAME": job_table.table_name,
-                    "PRIMARY_KEY": PRIMARY_KEY,
-                    "QUEUE": queue.queue_name
-            }
-            )
-
+        
             deployment = s3deploy.BucketDeployment(self, "extraPythonFiles",
                 sources=[s3deploy.Source.asset("../lambda/knowledge_base_handler/job")],
                 destination_key_prefix="glue_job_assets",
@@ -1085,34 +1054,37 @@ class LambdaStack(Stack):
 
             GlueS3Prefix = f"s3://{self.bucket.bucket_name}/glue_job_assets",
 
+            knowledge_base_handler_glue_role = _iam.Role(
+                self, 'knowledge_base_handler_rolev3',
+                assumed_by=_iam.ServicePrincipal('glue.amazonaws.com')
+            )
+            knowledge_base_handler_glue_role.add_to_policy(_knowledge_base_role_policy)
+            self.bucket.grant_read_write(knowledge_base_handler_glue_role)
+            job_table.grant_full_access(knowledge_base_handler_glue_role)
 
             glue_job = glue.CfnJob(
                 self, "MyGlueJob",
                 name="my-glue-job",
-                role=knowledge_base_handler_role.role_name,
+                role=knowledge_base_handler_glue_role.role_name,
+                execution_property = glue.CfnJob.ExecutionPropertyProperty(
+                    max_concurrent_runs=5
+                ),
                 command=glue.CfnJob.JobCommandProperty(
                     name="pythonshell",
                     python_version="3.9",
                     script_location=f"s3://{self.bucket.bucket_name}/glue_job_assets/glue-job-script.py",
                 ),
                 default_arguments={
-                    "--job-bookmark-option": "job-bookmark-disable",
                     "--TempDir": f"s3://{self.bucket.bucket_name}/temporary",
                     "--extra-py-files": f"s3://{self.bucket.bucket_name}/glue_job_assets/smart_search_dataload.py,s3://{self.bucket.bucket_name}/glue_job_assets/bedrock.py,s3://{self.bucket.bucket_name}/glue_job_assets/chinese_text_splitter.py,s3://{self.bucket.bucket_name}/glue_job_assets/opensearch_vector_search.py",
-                    "--additional-python-modules": "tqdm==4.65.0,boto3==1.28.72,langchain==0.0.325,opensearch-py==2.3.2,docx2txt==0.8,pypdf==3.16.4,numexpr==2.8.4",
+                    "--additional-python-modules": "tiktoken,tqdm==4.65.0,boto3==1.28.72,langchain==0.0.325,opensearch-py==2.3.2,docx2txt==0.8,pypdf==3.16.4,numexpr==2.8.4",
                 },
                 glue_version="3.0",
-                max_capacity=1.0
+                max_capacity=1.0,
                 )
-            ddb_dataload_function.add_event_source(SqsEventSource(queue))
-            queue.grant_consume_messages(knowledge_base_handler_role)
-            queue.grant_send_messages(knowledge_base_handler_role)
+            
             self.bucket.grant_read_write(knowledge_base_handler_role)
             job_table.grant_full_access(knowledge_base_handler_role)
-
-            #ddb_dataload_function.add_event_source(DynamoEventSource(job_table,
-            #    starting_position=_lambda.StartingPosition.TRIM_HORIZON,
-            #    batch_size=5))  # Adjust batch size as needed
 
             function_name = 'createJob',
             create_job_function = _lambda.Function(
@@ -1121,8 +1093,8 @@ class LambdaStack(Stack):
                 runtime=_lambda.Runtime.PYTHON_3_9,
                 role=knowledge_base_handler_role,
                 layers=[self.langchain_processor_qa_layer],
-                code=_lambda.Code.from_asset(f"../lambda/knowledge_base_handler/upload_trigger"),
-                handler='create' + '.handler',
+                code=_lambda.Code.from_asset(f"../lambda/knowledge_base_handler/job"),
+                handler='lambda_function' + '.lambda_handler',
                 timeout=Duration.minutes(5),
                 environment={
                     "EMBEDDING_ENDPOINT_NAME": EMBEDDING_ENDPOINT_NAME,
@@ -1132,8 +1104,6 @@ class LambdaStack(Stack):
                     "SEARCH_ENGINE": SEARCH_ENGINE,
                     "TABLE_NAME": job_table.table_name,
                     "PRIMARY_KEY": PRIMARY_KEY,
-                    "QUEUE": queue.queue_name
-
             }
             )
 
@@ -1201,33 +1171,10 @@ class LambdaStack(Stack):
             }
             )
 
-            function_name = 'UpdateJob',
-            update_job_function = _lambda.Function(
-                self, 'UpdateJob',
-                function_name='UpdateJob',
-                runtime=_lambda.Runtime.PYTHON_3_9,
-                role=knowledge_base_handler_role,
-                layers=[self.langchain_processor_qa_layer],
-                code=_lambda.Code.from_asset('../lambda/knowledge_base_handler/crud'),
-                handler='update-one' + '.handler',
-                timeout=Duration.minutes(5),
-                reserved_concurrent_executions=20,
-                environment={
-                    "EMBEDDING_ENDPOINT_NAME": EMBEDDING_ENDPOINT_NAME,
-                    "BUCKET": self.bucket.bucket_name,
-                    "HOST": search_engine_key,
-                    "REGION": REGION,
-                    "SEARCH_ENGINE": SEARCH_ENGINE,
-                    "TABLE_NAME": job_table.table_name,
-                    "PRIMARY_KEY": PRIMARY_KEY
-            }
-            )
-
             self.create_apigw_resource_method_for_knowledge_base_handler(
                 api=api,
                 create_job_function=create_job_function,
                 get_presignurl_function=get_presignurl_function,
                 list_jobs_function=list_jobs_function,
                 get_indice_list_function=get_indice_list_function,
-                update_job_function=update_job_function
             )

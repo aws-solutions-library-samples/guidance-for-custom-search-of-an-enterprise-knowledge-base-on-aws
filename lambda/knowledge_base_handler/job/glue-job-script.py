@@ -6,18 +6,37 @@ import boto3
 from datetime import datetime
 import time
 from smart_search_dataload import SmartSearchDataload
-from opensearchpy import OpenSearch, RequestsHttpConnection, AWSV4SignerAuth, helpers
+from awsglue.utils import getResolvedOptions
+import sys
+
+args = getResolvedOptions(
+    sys.argv,
+    [
+        "id",
+        "index",
+        "language",
+        "sourceKey",
+        "chunkSize",
+        "EMBEDDING_ENDPOINT_NAME",
+        "BUCKET",
+        "HOST",
+        "REGION",
+        "SEARCH_ENGINE",
+        "TABLE_NAME",
+        "PRIMARY_KEY",
+    ],
+)
 
 #get environment vars
-EMBEDDING_ENDPOINT_NAME = os.environ.get('embedding_endpoint_name',"bedrock-titan-embed")
-BUCKET = os.environ.get('BUCKET')
-HOST = os.environ.get('HOST', "")
-REGION = os.environ.get('REGION','us-west-2')
-SEARCH_ENGINE = os.environ.get('SEARCH_ENGINE',"opensearch")
+EMBEDDING_ENDPOINT_NAME = args.get('embedding_endpoint_name',"bedrock-titan-embed")
+BUCKET = args.get('BUCKET')
+HOST = args.get('HOST', "")
+REGION = args.get('REGION','us-west-2')
+SEARCH_ENGINE = args.get('SEARCH_ENGINE',"opensearch")
 PORT = 443
 BULK_SIZE = 10000000
-TABLE_NAME = os.getenv('TABLE_NAME', '')
-PRIMARY_KEY = os.getenv('PRIMARY_KEY', '')
+TABLE_NAME = args.get('TABLE_NAME', '')
+PRIMARY_KEY = args.get('PRIMARY_KEY', '')
 
 # retrieve secret manager value by key using boto3                                             
 sm_client = boto3.client('secretsmanager')
@@ -29,9 +48,6 @@ password = data.get('password')
 #init s3 connections
 s3_res = boto3.resource('s3')
 s3_cli = boto3.client('s3')
-
-credentials = boto3.Session().get_credentials()
-auth = AWSV4SignerAuth(credentials, REGION)
 
 def update_item(key, update_expression, expression_values, expression_keys):
     # Create a DynamoDB resource
@@ -50,28 +66,14 @@ def update_item(key, update_expression, expression_values, expression_keys):
 
     return response
 
-def lambda_handler(event, context):
-    
-    #if event is bytes, then convert it to dict
-    if isinstance(event, bytes):
-        print("byte type, convert to string")
-        event = event.decode('utf-8')
-        event = json.loads(event)
-    
-    eventName =  event.get('Records', [{}])[0].get('eventName')
-    if eventName != "INSERT":
-        return {
-            'statusCode': 200,
-            'body': f"Not a INSERT event, nothing to do, session aborted'"
-        }
+def main():
 
-    
-    body = event.get('Records', [{}])[0].get('dynamodb', {}).get('NewImage', {})
-    itemId = body.get('id', {}).get('S')
-    index =  body.get('index', {}).get('S')
-    language = body.get('language', {}).get('S')
-    object_key = body.get('sourceKey', {}).get('S')
-    chunk_size = int(body.get('chunkSize', {'N': '1500'} ).get('N'))
+    body = args
+    itemId = body.get('id')
+    index =  body.get('index')
+    language = body.get('language')
+    object_key = body.get('sourceKey')
+    chunk_size = int(body.get('chunkSize'))
 
     #init_knowledge_vector needed paratmers
     #chunk_size = body.get('chunkSize', 1500)
@@ -106,74 +108,52 @@ def lambda_handler(event, context):
         
         loaded_files = []
 
-        if True:
-            s3_cli.download_file(BUCKET, object_key, local_file_path)
-            print("finish download file")
+        s3_cli.download_file(BUCKET, object_key, local_file_path)
+        print("finish download file")
 
-            update_item(
-                 key={PRIMARY_KEY: itemId},
-                 update_expression="SET #jobStatus=:jobStatus",
-                 expression_values={':jobStatus': 'PROCESSING'},
-                 expression_keys={'#jobStatus': 'jobStatus'}
-            )
-            print("*****chunk_size*****")
-            print(chunk_size)
-            now1 = datetime.now()#begin time
-            loaded_files = dataload.init_knowledge_vector(
-                                                          filepath=local_file_path,
-                                                          chunk_size=chunk_size,
-                                                          chunk_overlap=chunk_overlap,
-                                                          sep_word_len=sep_word_len,
-                                                          qa_title_name=qa_title_name,
-                                                          split_to_sentence_paragraph=split_to_sentence_paragraph,
-                                                          paragraph_include_sentence_num=paragraph_include_sentence_num,
-                                                          text_max_length=text_max_length,
-                                                          pdf_to_html=pdf_to_html,
-                                                          text_field=text_field,
-                                                          vector_field=vector_field
-                                                         )
-            
-            now2 = datetime.now()#endtime
-            print("File import takes time:",now2-now1)
-            print("Complete the import of the following documents:", str(loaded_files))
+        update_item(
+                key={PRIMARY_KEY: itemId},
+                update_expression="SET #jobStatus=:jobStatus",
+                expression_values={':jobStatus': 'PROCESSING'},
+                expression_keys={'#jobStatus': 'jobStatus'}
+        )
+        print("*****chunk_size*****")
+        print(chunk_size)
+        now1 = datetime.now()#begin time
+        loaded_files = dataload.init_knowledge_vector(
+                                                        filepath=local_file_path,
+                                                        chunk_size=chunk_size,
+                                                        chunk_overlap=chunk_overlap,
+                                                        sep_word_len=sep_word_len,
+                                                        qa_title_name=qa_title_name,
+                                                        split_to_sentence_paragraph=split_to_sentence_paragraph,
+                                                        paragraph_include_sentence_num=paragraph_include_sentence_num,
+                                                        text_max_length=text_max_length,
+                                                        pdf_to_html=pdf_to_html,
+                                                        text_field=text_field,
+                                                        vector_field=vector_field
+                                                        )
+        
+        now2 = datetime.now()#endtime
+        print("File import takes time:",now2-now1)
+        print("Complete the import of the following documents:", str(loaded_files))
 
-            update_item(
-                 key={PRIMARY_KEY: itemId},
-                 update_expression="SET #jobStatus=:jobStatus",
-                 expression_values={':jobStatus': 'COMPLETED'},
-                 expression_keys={'#jobStatus': 'jobStatus'}
-            )
-        
-        else:
-            print("Empty file")
-        
-        response = {
-            "statusCode": 200,
-            "headers": {
-                    "Access-Control-Allow-Origin": '*'
-                },
-                "isBase64Encoded": False
-        }
-            
-        response['body'] = json.dumps(
-        {
-            'datetime':time.time(),
-            'loaded_files': loaded_files
-            
-        })
-        
-        print("response:",response)
-        return response
-        
+        update_item(
+                key={PRIMARY_KEY: itemId},
+                update_expression="SET #jobStatus=:jobStatus",
+                expression_values={':jobStatus': 'COMPLETED'},
+                expression_keys={'#jobStatus': 'jobStatus'}
+        )
+                
     except Exception as e:
-        traceback.print_exc()
+        print(f"Error processing object {s3_file_name}: {e}")
         update_item(
                  key={PRIMARY_KEY: itemId},
                  update_expression="SET #jobStatus=:jobStatus",
                  expression_values={':jobStatus': 'FAILED'},
                  expression_keys={'#jobStatus': 'jobStatus'}
             )
-        return {
-            'statusCode': 400,
-            'body': str(e)
-        }
+        traceback.print_exc()
+
+if __name__ == "__main__":
+    main()

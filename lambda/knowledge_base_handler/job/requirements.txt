@@ -1,9 +1,0 @@
-pymilvus==2.3.1
-boto3==1.28.72
-langchain==0.0.325
-opensearch-py==2.3.2
-docx2txt==0.8
-pypdf==3.16.4
-numexpr==2.8.4
-tqdm
-tiktoken
