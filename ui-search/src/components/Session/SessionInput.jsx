@@ -210,7 +210,6 @@ const SessionInput = ({ data }) => {
       return () => clearInterval(interval);
     }
     setSecondsTaken(0);
-    return () => {};
   }, [loading]);
 
   return (
