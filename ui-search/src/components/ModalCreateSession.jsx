@@ -107,7 +107,8 @@ export default function ModalCreateSession({ dismissModal, modalVisible }) {
 
   const [indexName, setIndexName] = useState('');
   const [kendraIndexId, setKendraIndexId] = useState('');
-  const [indexNameList, loadingIndexNameList] = useIndexNameList(modalVisible);
+  const [indexNameList, loadingIndexNameList, refreshIndexNameList] =
+    useIndexNameList(modalVisible);
   const [searchMethod, setSearchMethod] = useState(SEARCH_METHOD[0].value);
   const [txtDocsNum, setTxtDocsNum] = useState(0);
   const [vecDocsScoreThresholds, setVecDocsScoreThresholds] = useState(0);
@@ -485,6 +486,7 @@ export default function ModalCreateSession({ dismissModal, modalVisible }) {
                         }
                       >
                         <Select
+                          onFocus={refreshIndexNameList}
                           empty="Upload a file if no options present"
                           onChange={({ detail }) =>
                             setIndexName(detail.selectedOption.value)

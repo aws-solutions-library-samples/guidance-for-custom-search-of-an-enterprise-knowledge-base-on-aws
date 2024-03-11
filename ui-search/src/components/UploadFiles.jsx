@@ -43,7 +43,8 @@ const indexNameIsInvalid = (indexName) => /^\.|.*[A-Z|\s].*/.test(indexName);
 
 const UploadFiles = () => {
   const { urlApiGateway } = useLsAppConfigs();
-  const [indexNameList, loadingIndexNameList] = useIndexNameList();
+  const [indexNameList, loadingIndexNameList, refreshIndexNameList] =
+    useIndexNameList();
   const [_, OptionsEmbeddingEndpoint, loadingEndpointList] = useEndpointList();
 
   const [searchEngine, bindSearchEngine, resetSearchEngine] = useInput(
@@ -225,6 +226,7 @@ const UploadFiles = () => {
                 }
               >
                 <Autosuggest
+                  onFocus={refreshIndexNameList}
                   enteredTextLabel={(v) => `Use: "${v}"`}
                   onChange={({ detail }) => setIndexName(detail.value)}
                   value={indexName}

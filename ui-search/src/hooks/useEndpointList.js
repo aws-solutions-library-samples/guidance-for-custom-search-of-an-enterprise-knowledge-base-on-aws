@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import useLsAppConfigs from './useLsAppConfigs';
 import toast from 'react-hot-toast';
 
@@ -18,37 +18,40 @@ const useEndpointList = (fetchNow = true) => {
   const [optionsEndpoint, setOptionsEndpoint] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  const getEndpointList = useCallback(() => {
+    fetch(`${urlApiGateway}/endpoint_list`)
+      .then((res) => {
+        if (res.ok) return res.json();
+        throw new Error('Network response was not ok.');
+      })
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setOptionsEndpoint(data.map((d) => ({ value: d })));
+        } else {
+          throw new Error('Endpoint list is not an array');
+        }
+      })
+      .catch((error) => {
+        toast.error('Error fetching endpoint list');
+        setOptionsEndpoint([]);
+      })
+      .finally(() => setLoading(false));
+  }, [urlApiGateway]);
+
   useEffect(() => {
     setLoading(true);
     if (!urlApiGateway) return setLoading(false);
     let timer = setTimeout(() => {
-      if (fetchNow) {
-        fetch(`${urlApiGateway}/endpoint_list`)
-          .then((res) => {
-            if (res.ok) return res.json();
-            throw new Error('Network response was not ok.');
-          })
-          .then((data) => {
-            if (Array.isArray(data)) {
-              setOptionsEndpoint(data.map((d) => ({ value: d })));
-            } else {
-              throw new Error('Endpoint list is not an array');
-            }
-          })
-          .catch((error) => {
-            toast.error('Error fetching endpoint list');
-            setOptionsEndpoint([]);
-          })
-          .finally(() => setLoading(false));
-      }
+      if (fetchNow) getEndpointList();
     }, 1000);
     return () => clearTimeout(timer);
-  }, [urlApiGateway, fetchNow]);
+  }, [urlApiGateway, fetchNow, getEndpointList]);
 
   return [
     optionsEndpoint,
     [...EMBEDDING_ENDPOINTS_FIXED, ...optionsEndpoint],
     loading,
+    getEndpointList,
   ];
 };
 
