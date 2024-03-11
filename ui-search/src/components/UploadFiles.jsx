@@ -83,7 +83,7 @@ const UploadFiles = () => {
       const res = await fetch(`${urlApiGateway}/knowledge_base_handler/jobs`);
       if (!res.ok) throw new Error('Failed to get job list');
       const data = await res.json();
-      setJobList(data);
+      setJobList(data.sort((a, b) => b.createdAt - a.createdAt));
     } catch (error) {
       console.error(error);
       toast.error('Failed to get job list');
