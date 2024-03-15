@@ -3,7 +3,7 @@ import useLsAppConfigs from './useLsAppConfigs';
 import toast from 'react-hot-toast';
 
 const EMBEDDING_ENDPOINTS_FIXED = [
-  { label: 'Titan Embedding', value: 'bedrock-titan-embed' },
+  { label: 'Titan Embedding', value: 'amazon.titan-embed-text-v1' },
   { label: 'Cohere Embedding', value: 'cohere.embed-multilingual-v3' },
 ];
 
