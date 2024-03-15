@@ -543,9 +543,9 @@ export default function ModalCreateSession({ dismissModal, modalVisible }) {
                         label="Number of doc for vector search"
                         constraintText="Integer between 1 and 200"
                         errorText={
-                          topK >= 1 && topK <= 10
+                          topK >= 0 && topK <= 10
                             ? ''
-                            : 'A number between 1 and 200'
+                            : 'A number between 0 and 200'
                         }
                       >
                         <Input
@@ -566,9 +566,9 @@ export default function ModalCreateSession({ dismissModal, modalVisible }) {
                         label="Number of doc for text search"
                         constraintText="Integer between 1 and 200"
                         errorText={
-                          txtDocsNum >= 1 && txtDocsNum <= 200
+                          txtDocsNum >= 0 && txtDocsNum <= 200
                             ? ''
-                            : 'A number between 1 and 200'
+                            : 'A number between 0 and 200'
                         }
                       >
                         <Input
