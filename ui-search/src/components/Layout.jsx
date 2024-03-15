@@ -8,7 +8,7 @@ import NavTop from './NavTop';
 import useCheckAppConfigsEffect from 'src/hooks/useCheckAppConfigsEffect';
 
 const Layout = () => {
-  useCheckAppConfigsEffect();
+  // useCheckAppConfigsEffect();
   return (
     <Box>
       <SessionStoreProvider>
