@@ -67,6 +67,11 @@ const THIRD_PARTY_API_MODEL_NAMES = [
     modelType: ['bedrock', 'bedrock_api'],
   },
   {
+    label: 'anthropic.claude-3-haiku',
+    value: 'anthropic.claude-3-haiku-20240307-v1:0',
+    modelType: ['bedrock', 'bedrock_api'],
+  },
+  {
     label: 'mistral.mistral-7b',
     value: 'mistral.mistral-7b-instruct-v0:2',
     modelType: ['bedrock', 'bedrock_api'],
