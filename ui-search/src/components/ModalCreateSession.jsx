@@ -541,7 +541,7 @@ export default function ModalCreateSession({ dismissModal, modalVisible }) {
                       <FormField
                         stretch
                         label="Number of doc for vector search"
-                        constraintText="Integer between 1 and 200"
+                        constraintText="Integer between 0 and 200"
                         errorText={
                           topK >= 0 && topK <= 10
                             ? ''
@@ -564,7 +564,7 @@ export default function ModalCreateSession({ dismissModal, modalVisible }) {
                       <FormField
                         stretch
                         label="Number of doc for text search"
-                        constraintText="Integer between 1 and 200"
+                        constraintText="Integer between 0 and 200"
                         errorText={
                           txtDocsNum >= 0 && txtDocsNum <= 200
                             ? ''
