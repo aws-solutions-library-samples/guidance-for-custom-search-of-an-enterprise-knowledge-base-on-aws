@@ -543,7 +543,7 @@ export default function ModalCreateSession({ dismissModal, modalVisible }) {
                         label="Number of doc for vector search"
                         constraintText="Integer between 0 and 200"
                         errorText={
-                          topK >= 0 && topK <= 10
+                          topK >= 0 && topK <= 200
                             ? ''
                             : 'A number between 0 and 200'
                         }
