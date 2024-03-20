@@ -1,16 +1,23 @@
 import { useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 
-const AutoScrollToDiv = (data = {}) => {
+function scrollToView(ele) {
+  if (!ele) return;
+  if (window.innerHeight < ele?.getBoundingClientRect().top) {
+    ele?.scrollIntoView({ behavior: 'smooth' });
+  }
+}
+
+const AutoScrollToDiv = () => {
+  const location = useLocation();
   const refInputDiv = useRef(null);
   // NOTE: to automatically scroll down to the user input
   useEffect(() => {
-    if (refInputDiv.current) {
-      const elementPosition = refInputDiv.current.getBoundingClientRect().top;
-      if (window.innerHeight < elementPosition) {
-        refInputDiv.current?.scrollIntoView({ behavior: 'smooth' });
-      }
-    }
-  }, [refInputDiv, data]);
+    setTimeout(() => {
+      scrollToView(refInputDiv.current);
+    }, 100);
+  }, [location]);
+
   return <div ref={refInputDiv} />;
 };
 
