@@ -18,7 +18,7 @@ const SIZE = 'l';
 const SessionBrief = ({ configs, expanded }) => {
   const { delSession } = useSessionStore((s) => [s.delSession]);
   const navigate = useNavigate();
-  const [displayDetails, setDisplayDetails] = useState(true);
+  const [displayDetails, setDisplayDetails] = useState(expanded);
 
   if (!configs) return <StateLoading headerText="Loading Session Configs..." />;
 
