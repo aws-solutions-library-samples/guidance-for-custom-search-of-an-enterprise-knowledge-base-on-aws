@@ -4,7 +4,7 @@ import {
   Input,
   StatusIndicator,
 } from '@cloudscape-design/components';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useParams } from 'react-router-dom';
 import useInput from 'src/hooks/useInput';
@@ -12,6 +12,7 @@ import useLsAppConfigs from 'src/hooks/useLsAppConfigs';
 import useLsSessionList from 'src/hooks/useLsSessionList';
 import AutoScrollToDiv from '../AutoScrollToDiv';
 import ChatIcon from './ChatIcon';
+import { StreamingContext } from '.';
 
 const GENERAL_WSS_ERROR_MSG = 'Error on receiving Websocket data';
 let flagFirstStream = true;
@@ -54,6 +55,8 @@ const SessionInput = ({ data }) => {
     setIsConnected(false);
   }, []);
 
+  const { setStreaming, setStreamingText } = useContext(StreamingContext);
+
   // NOTE: what to do when web receives a message from websocket connection
   const onSocketMessage = useCallback(
     (dataStr) => {
@@ -65,6 +68,8 @@ const SessionInput = ({ data }) => {
           case 'streaming':
             // do this when streaming text/answer
             onStreaming(data, flagFirstStream);
+            setStreaming(true);
+            setStreamingText(data.text);
             flagFirstStream = false;
             return;
           case 'streaming_end':
@@ -73,6 +78,8 @@ const SessionInput = ({ data }) => {
               { ...data, answerTook: Date.now() - answerTimer },
               flagFirstStream
             );
+            setStreamingText(data.text);
+            setStreaming(false);
             setLoading(false);
             flagFirstStream = true;
             resetQuery();
@@ -214,7 +221,7 @@ const SessionInput = ({ data }) => {
 
   return (
     <Container>
-      <AutoScrollToDiv data={data} />
+      <AutoScrollToDiv />
       <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
         <div>
           <ChatIcon />

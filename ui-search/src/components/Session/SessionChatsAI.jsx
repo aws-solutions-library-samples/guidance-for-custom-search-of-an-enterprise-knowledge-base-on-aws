@@ -8,8 +8,11 @@ import { readTimestamp } from 'src/utils';
 import ChatIcon from './ChatIcon';
 import { StyledAContainer, StyledQ } from './StyledChatComponents';
 import TableSources from './TableSources';
+import { useContext } from 'react';
+import { StreamingContext } from '.';
 
 const SessionChatsAI = ({
+  isLast,
   content: {
     text,
     timestamp,
@@ -20,13 +23,14 @@ const SessionChatsAI = ({
     answerTook,
   },
 }) => {
+  const { streamingText, streaming } = useContext(StreamingContext);
   return (
     <StyledAContainer $isRobot>
       <StyledQ>
         <div className="icon">
           <ChatIcon name="video-on" />
         </div>
-        <div className="text">{text}</div>
+        <div className="text">{streaming && isLast ? streamingText : text}</div>
         <div className="extra">
           {readTimestamp(timestamp)}
           <Box float="right">

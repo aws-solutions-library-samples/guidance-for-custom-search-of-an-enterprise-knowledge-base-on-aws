@@ -27,7 +27,11 @@ const SessionChats = ({ conversations }) => {
               </StyledQ>
             ) : (
               // robot response record
-              <SessionChatsAI content={content} key={i} />
+              <SessionChatsAI
+                content={content}
+                key={i}
+                isLast={conversations.length === i + 1}
+              />
             )
           )
         )}
