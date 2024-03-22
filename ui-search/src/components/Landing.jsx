@@ -8,7 +8,7 @@ import {
   Header,
 } from '@cloudscape-design/components';
 import { styled } from 'styled-components';
-import architecture from '../assets/architecture.png';
+import architecture from '../assets/architecture.jpg';
 import AppConfigs from './AppConfigs';
 
 const desc = (
